@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>OMIKUJI // MASTER_CORE_v33.1_SCROLL_FIX</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        @font-face { font-family: 'NIN'; src: url('nin.ttf'); } 
+        @font-face { font-family: 'DATA'; src: url('data.ttf'); }
+        
+        :root {
+            --bg-dark: #020205;
+            --chassis-bg: #0b1015;
+            --panel-bg: #11161d;
+            --ice-dim: #37474f;
+            --ice-bright: #00e5ff; /* SUB-ZERO CYAN */
+            --ice-glow: 0 0 5px #00e5ff, 0 0 10px #00e5ff;
+            --text-color: #b0bec5;
+        }
+
+        body {
+            font-family: 'NIN';
+            background: var(--bg-dark);
+            color: var(--text-color);
+            padding: 20px;
+            text-transform: uppercase;
+            user-select: none;
+            overflow: hidden; 
+            height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+        }
+        
+        #chassis {
+            width: 1044px;
+            height: 95vh;
+            background: var(--chassis-bg);
+            border: 4px solid #1c2530;
+            outline: 2px solid var(--ice-dim); /* Double border look */
+            padding: 15px;
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.1);
+            color: var(--ice-bright);
+            display: flex;
+            flex-direction: column;
+            box-sizing: border-box;
+            position: relative;
+            opacity: 0; 
+            transition: opacity 0.5s;
+        }
+
+        /* SCREWS */
+        .screw {
+            position: absolute; width: 12px; height: 12px;
+            background: #2a3540; border-radius: 50%;
+            border: 1px solid #000;
+            box-shadow: inset 1px 1px 2px rgba(255,255,255,0.1), 1px 1px 1px rgba(0,0,0,0.5);
+            z-index: 20;
+        }
+        .screw::after { /* Phillips head cross */
+            content: ''; position: absolute; top: 2px; left: 5px; width: 2px; height: 8px; background: #000; opacity: 0.6;
+        }
+        .screw::before {
+            content: ''; position: absolute; top: 5px; left: 2px; width: 8px; height: 2px; background: #000; opacity: 0.6;
+        }
+        .tl { top: 6px; left: 6px; transform: rotate(45deg); }
+        .tr { top: 6px; right: 6px; transform: rotate(15deg); }
+        .bl { bottom: 6px; left: 6px; transform: rotate(-20deg); }
+        .br { bottom: 6px; right: 6px; transform: rotate(60deg); }
+
+        /* BOOT OVERLAY */
+        #boot-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; color: var(--ice-bright);
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9999; font-family: 'DATA'; cursor: pointer;
+            text-shadow: var(--ice-glow);
+        }
+        .blink { animation: bl 0.1s infinite; }
+        @keyframes bl { 0%,100%{opacity:1} 50%{opacity:0.7} }
+        
+        /* HARDWARE FLASH EFFECT (FROST) */
+        .hw-flash {
+            background: var(--ice-bright) !important;
+            color: #000 !important;
+            border-color: #fff !important;
+            box-shadow: 0 0 20px var(--ice-bright) !important;
+        }
+
+        .panel-fixed { 
+            border: 1px solid #2a3540; 
+            padding: 8px; 
+            background: var(--panel-bg); 
+            flex-shrink: 0; 
+            z-index: 10; 
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+        .mb { margin-bottom: 10px; }
+        .data-font { font-family: 'DATA'; font-size: 10px; letter-spacing: 1px; color: #546e7a; text-shadow:none; }
+        
+        button { 
+            font-family: 'DATA'; border: 1px solid #2a3540; background: #0f141a; color: var(--ice-bright); 
+            cursor: pointer; padding: 5px 10px; font-size: 11px; transition: 0.1s; 
+            box-shadow: 0 0 5px rgba(0,229,255,0.05);
+        }
+        button:hover { 
+            background: var(--ice-bright); color: #000; border-color: var(--ice-bright); 
+            box-shadow: var(--ice-glow);
+        }
+        
+        input[type=range] { accent-color: var(--ice-bright); width: 100%; background:transparent; }
+        input { background: #000; color: var(--ice-bright); border: 1px solid #2a3540; }
+
+        #page-seq, #page-fx { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; margin-bottom: 10px; }
+        
+        /* SCROLLABLE RACK & FX CONTAINER - ICE STYLE */
+        #rack, #fx-rack { 
+            flex-grow: 1; overflow-y: auto; overflow-x: hidden; 
+            border: 1px solid #2a3540; background: #080a0c; 
+            padding: 4px; height: 100%; 
+        }
+
+        /* SHARED SCROLLBAR STYLES */
+        #rack::-webkit-scrollbar, #fx-rack::-webkit-scrollbar { width: 8px; }
+        #rack::-webkit-scrollbar-track, #fx-rack::-webkit-scrollbar-track { background: #0b1015; border-left: 1px solid #2a3540; }
+        #rack::-webkit-scrollbar-thumb, #fx-rack::-webkit-scrollbar-thumb { background: var(--ice-dim); border: 1px solid #000; }
+        #rack::-webkit-scrollbar-thumb:hover, #fx-rack::-webkit-scrollbar-thumb:hover { background: var(--ice-bright); }
+
+        .step-grid { display: flex; gap: 3px; } 
+        .step-col { width: 50px; flex-shrink: 0; display: flex; flex-direction: column; gap: 2px; }
+        
+        /* STEPS: Dark by default */
+        .step { height: 20px; border: 1px solid #2a3540; cursor: pointer; background: #151a21; width: 50px; box-sizing: border-box; transition: background 0.05s; }
+        
+        .v-box { height: 35px; border: 1px solid #2a3540; position: relative; cursor: ns-resize; width: 50px; background:#151a21; }
+        .v-bar { position: absolute; bottom: 0; width: 100%; background: var(--ice-bright); pointer-events: none; opacity: 0.5; }
+        
+        .piano-drawer { display:none; background:#0f141a; border-top:1px solid var(--ice-bright); margin-top:5px; padding:5px; box-shadow:inset 0 0 10px #000; }
+        .piano-key { height: 14px; border: 1px solid #2a3540; cursor: pointer; font-size: 7px; display: flex; align-items: center; justify-content: center; background: #151a21; color: #546e7a; width: 50px; margin-bottom:1px; transition: background 0.05s; }
+        
+        /* ACTIVE STATES: GLOWING CYAN */
+        .key-active { background: #000 !important; color: var(--ice-bright) !important; border: 1px solid var(--ice-bright) !important; font-weight:bold; box-shadow: 0 0 8px var(--ice-bright); }
+        
+        #monitor-panel { background: #000; color: var(--ice-bright); padding: 10px; height: 30px; font-family: 'DATA'; font-size: 9px; overflow-y: auto; border-top: 1px solid var(--ice-bright); flex-shrink: 0; text-shadow: 0 0 2px var(--ice-bright); }
+        
+        .song-block { width:30px; height:30px; border:1px solid #2a3540; display:flex; align-items:center; justify-content:center; cursor:pointer; font-family:'DATA'; font-size:10px; font-weight:bold; background:#151a21; color:var(--ice-bright); transition: background 0.05s; }
+        
+        .fx-slot { border: 1px solid #2a3540; margin-bottom: 10px; background: #151a21; color: var(--ice-bright); }
+        .bpm-btn { padding: 2px 5px; font-size: 8px; line-height: 1; }
+        
+        .arr-ctrl { display: flex; flex-direction: column; gap: 2px; margin-right: 8px; justify-content: center; border-right: 1px solid #2a3540; padding-right: 8px; }
+        .arr-btn { width: 30px; height: 14px; font-size: 9px; padding: 0; display: flex; align-items: center; justify-content: center; }
+        
+        .del-btn { color: #f44; border-color: #522; font-weight: bold; padding: 2px 6px; }
+        .del-btn:hover { background: #f44 !important; color: #fff !important; border-color: #f44 !important; box-shadow: 0 0 10px #f44; }
+
+        .track-row { display:flex; gap:8px; align-items:flex-start; padding:4px; border-bottom:1px solid #1c2530; background:#11161d; }
+        .track-controls { width:120px; flex-shrink:0; display:flex; flex-direction:column; gap:3px; }
+        .ctrl-row { display:flex; justify-content:space-between; align-items:center; }
+        .tiny-btn { padding: 2px 6px; font-size: 9px; }
+        .file-name { font-size:8px; color:var(--ice-bright); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px; text-shadow: 0 0 2px rgba(0,229,255,0.5); }
+        
+        select { background: #000; color: var(--ice-bright); border: 1px solid #2a3540; }
+    </style>
+</head>
+<body>
+
+<div id="boot-screen" onclick="bootSystem()">
+    <div style="font-size:24px; margin-bottom:10px; letter-spacing:4px">SUB_ZERO_CORE</div>
+    <div class="blink" style="color:#fff">>> INITIALIZE_SYSTEM <<</div>
+</div>
+
+<div id="chassis">
+    <div class="screw tl"></div>
+    <div class="screw tr"></div>
+    <div class="screw bl"></div>
+    <div class="screw br"></div>
+
+    <div class="panel-fixed mb" style="display:flex;justify-content:space-between;align-items:center; padding:5px 10px">
+        <div style="display:flex;gap:15px;align-items:center">
+            <button id="pB" onclick="play()">PLAY</button>
+            <div class="data-font" style="display:flex; align-items:center; gap:4px">
+                BPM 
+                <input id="bpm" value="120" style="width:35px; text-align:center">
+                <div style="display:flex; flex-direction:column; gap:1px">
+                    <button class="bpm-btn" onclick="adjBPM(1,event)">▲</button>
+                    <button class="bpm-btn" onclick="adjBPM(-1,event)">▼</button>
+                </div>
+            </div>
+            <div style="display:flex;gap:5px;border-left:2px solid #2a3540;padding-left:10px">
+                <button onclick="copyP()">CPY</button><button onclick="pasteP()">PST</button>
+                <button onclick="exportSession()">EXP</button>
+                <button onclick="$('loader').click()">IMP</button>
+                <input type="file" id="loader" style="display:none" onchange="importSession(event)">
+            </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center">
+            <button id="mB" onclick="m=1-m;mB.innerText=m?'MODE:SONG':'MODE:PAT';up()">MODE:PAT</button>
+            <div class="tabs">
+                <button id="tSeq" style="background:var(--ice-bright);color:#000; box-shadow:var(--ice-glow)" onclick="tab('seq')">SEQ</button>
+                <button id="tFx" onclick="tab('fx')">FX</button>
+                <button onclick="addT()" style="background:#0f141a;color:var(--ice-bright)">+TRK</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-seq">
+        <div class="panel-fixed" style="padding-bottom:5px; margin-bottom:0; border-bottom:0">
+            <div class="data-font">ARRANGER_MATRIX</div>
+            <div id="song-slots" style="display:flex; gap:4px; flex-wrap:wrap; margin-top:4px; align-items:center"></div>
+        </div>
+        
+        <div id="pattern-nav" style="display:flex; gap:5px; height:20px; background:#000; border-left:2px solid #2a3540; border-right:2px solid #2a3540; padding:2px; flex-shrink:0;"></div>
+        
+        <div id="rack"></div>
+    </div>
+
+    <div id="page-fx" style="display:none">
+        <div class="panel-fixed" style="margin-bottom:5px; flex-shrink:0">
+            <button onclick="$('pluginLoader').click()">+ INJECT MACHINE</button>
+            <input type="file" id="pluginLoader" style="display:none" onchange="injectPlugin(event)">
+        </div>
+        <div id="fx-rack">
+            <div id="pluginUI"></div>
+        </div>
+    </div>
+
+    <div class="panel-fixed mb" style="display:grid;grid-template-columns:1fr 1fr;gap:20px; padding:5px 10px">
+        <div>
+            <div class="data-font">MASTER / SWING</div>
+            <input type="range" min="0" max="1.5" step="0.01" value="1" id="mVol" oninput="if(mG)mG.gain.value=this.value">
+            <div style="display:flex; gap:10px; margin-top:5px; align-items:center">
+                <input type="range" id="swAmt" min="0" max="1" step="0.01" value="0">
+                <button onclick="$('swLdr').click()" class="tiny-btn">LOAD_SWING</button>
+                <input type="file" id="swLdr" style="display:none" onchange="loadSwing(event)">
+            </div>
+        </div>
+        <div>
+            <div class="data-font">RECORDER</div>
+            <div style="display:flex; gap:5px">
+                <button id="armB" onclick="armRec()">ARM REC</button>
+                <button id="expB" style="display:none" onclick="exportWav()">SAVE .WAV</button>
+            </div>
+            <audio id="prev" controls style="display:none; height:20px; margin-top:5px; width:100%"></audio>
+        </div>
+    </div>
+
+    <div id="monitor-panel"><div id="log-out">> SYSTEM_FROZEN...</div></div>
+</div>
+
+<script>
+/** ENGINE CORE **/
+let ctx, b=0, m=0, cur=0, nxt=0, S=[0,0,1,1], tID, si=0, run=0, banks=Array.from({length:8},()=>[]), mG, dest, rec, chunks=[], armed=0, isRec=0, clip=null;
+window.window_fxR = [];
+let swingEngine = { name:"STRAIGHT", getOffset: (s, a) => 0 };
+let swingCodeStore = ""; // Stores raw JS for swing engine
+
+const NOTES = ["C", "B", "A#", "A", "G#", "G", "F#", "F", "E", "D#", "D", "C#", "C"];
+const $=id=>document.getElementById(id), log=msg=>{$('log-out').innerHTML+=`<div>${msg}</div>`;$('monitor-panel').scrollTop=9999};
+
+/* --- BOOT SEQUENCE LOGIC --- */
+const bootSystem = async () => {
+    if(!ctx) {
+        ctx = new AudioContext();
+        mG = ctx.createGain(); mG.connect(ctx.destination);
+        dest = ctx.createMediaStreamDestination(); mG.connect(dest);
+        rec = new MediaRecorder(dest.stream); 
+        rec.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data)};
+        rec.onstop=()=>{let blob=new Blob(chunks,{type:'audio/wav'}); $('prev').src=URL.createObjectURL(blob); $('prev').style.display=$('expB').style.display='block';};
+    }
+    if(ctx.state === 'suspended') await ctx.resume();
+
+    const screen = $('boot-screen');
+    const chassis = $('chassis');
+    screen.style.display = 'none';
+    chassis.style.opacity = '1';
+    
+    // SOUND
+    let now = ctx.currentTime;
+    let osc = ctx.createOscillator();
+    let gain = ctx.createGain();
+    osc.type = 'sawtooth'; 
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    let steps = 12; let stepDur = 0.06; 
+    osc.frequency.setValueAtTime(110, now);
+    for(let i=0; i<steps; i++) {
+        let t = now + (i * stepDur);
+        osc.frequency.setValueAtTime(110 * Math.pow(1.15, i), t);
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.2, t + 0.01);
+        gain.gain.linearRampToValueAtTime(0, t + stepDur - 0.01);
+    }
+    osc.start(now);
+    osc.stop(now + (steps * stepDur) + 0.5);
+
+    // LIGHT SHOW
+    let elements = document.querySelectorAll('.song-block, #pattern-nav button, .step, .piano-key, .tiny-btn');
+    elements.forEach((el, i) => {
+        if(Math.random() > 0.6) {
+            let d = Math.random() * 600; 
+            setTimeout(() => {
+                el.classList.add('hw-flash');
+                setTimeout(() => el.classList.remove('hw-flash'), 100);
+            }, d);
+        }
+    });
+
+    log("> CRYOGENIC_STASIS_CHECK... OK");
+    setTimeout(()=>log("> MEMORY_CORE... OK"), 200);
+    setTimeout(()=>log("> SUB_ZERO_ENGINE_ONLINE"), 400);
+};
+
+const adjBPM=(val,e)=>{ let el=$('bpm'); let v=parseInt(el.value); let step=e.shiftKey?5:1; el.value=v+(val*step); };
+
+const initA=async()=>{ 
+    if(!ctx) return;
+    if(ctx.state === 'suspended') await ctx.resume();
+};
+
+async function loadSwing(e) {
+    let f = e.target.files[0]; if (!f) return;
+    try {
+        swingCodeStore = await f.text(); // Capture raw code for export
+        const blob = new Blob([swingCodeStore], { type: 'text/javascript' });
+        const url = URL.createObjectURL(blob);
+        const mod = await import(url + '#' + Date.now());
+        swingEngine = mod.default || mod;
+        log(`SWING ENGINE LOADED: ${swingEngine.name}`);
+    } catch (err) { log(`SWING ERROR: ${err.message}`); }
+}
+
+const sch=()=>{
+    if(!run) return;
+    let bpmVal=parseFloat($('bpm').value);
+    let secPerStep = 60 / bpmVal / 4; 
+    while(nxt < ctx.currentTime + 0.1){
+        if(m&&cur===0){ b=S[si]; si=(si+1)%S.length; } 
+        let off = swingEngine.getOffset(cur, parseFloat($('swAmt').value)) * secPerStep;
+        let time = nxt + off;
+
+        if(banks[b]){
+            banks[b].forEach(t=>{
+                let st=t.s[cur];
+                if(st.on){
+                    t.vV.disconnect(); t.vV.connect(mG);
+                    let fx=window_fxR.find(f=>f.id===t.route);
+                    if(fx&&fx.input){t.vV.disconnect(); t.vV.connect(fx.input); if(fx.output) fx.output.connect(mG);}
+                    if(fx&&typeof fx.noteOn==='function')fx.noteOn(st.freq,time,st.v);
+                    
+                    if(t.buf){
+                        if(t.activeSources.length){
+                            t.activeSources.forEach(s=>{try{s.stop(time)}catch(e){}}); 
+                            t.activeSources=[];
+                        }
+                        let s=ctx.createBufferSource(); 
+                        s.buffer=t.buf; 
+                        s.playbackRate.setValueAtTime(st.freq/65.41,time);
+                        let vG=ctx.createGain(); vG.gain.value=st.v; s.connect(vG); vG.connect(t.vV);
+                        s.start(time); 
+                        t.activeSources.push(s);
+                    }
+                }
+            });
+        }
+        setTimeout(up,(nxt-ctx.currentTime)*1000); 
+        nxt+=secPerStep; 
+        cur=(cur+1)%16;
+    }
+    tID=setTimeout(sch,25);
+};
+
+const play=async()=>{
+    await initA(); run=!run; 
+    let btn = $('pB');
+    if(run) {
+        btn.style.background = "var(--ice-bright)";
+        btn.style.color = "#000";
+        btn.style.boxShadow = "var(--ice-glow)";
+    } else {
+        btn.style.background = "";
+        btn.style.color = "var(--ice-bright)";
+        btn.style.boxShadow = "";
+    }
+
+    if(run){ if(armed){chunks=[]; rec.start(); isRec=1;} cur=0; si=0; nxt=ctx.currentTime; sch(); }
+    else { 
+        if(isRec){rec.stop(); isRec=0; armed=0; $('armB').innerText="ARM REC"; $('armB').style.background="#fff"; $('armB').style.color="#000";} 
+        clearTimeout(tID); 
+        mG.gain.setTargetAtTime(0,ctx.currentTime,0.05); 
+        setTimeout(()=>{
+            mG.gain.value=$('mVol').value;
+            banks.forEach(bn=>bn.forEach(t=>{
+                t.activeSources.forEach(s=>{try{s.stop()}catch(e){}});
+                t.activeSources=[];
+            }));
+        },100); 
+        up(); 
+    }
+};
+
+window.removeFX = (idx) => {
+    const fx = window_fxR[idx];
+    if (!fx) return;
+    banks.forEach(bn => bn.forEach(t => { if(t.route === fx.id) t.route = "MASTER"; }));
+    try { if(fx.input) fx.input.disconnect(); if(fx.output) fx.output.disconnect(); } catch(e){}
+    window_fxR.splice(idx, 1);
+    renderFX(); updateTD();
+};
+
+const renderFX = () => {
+    let ui=$('pluginUI'); ui.innerHTML = window_fxR.length ? '' : '<div class="data-font">> NO MACHINES</div>';
+    window_fxR.forEach((f, i) => {
+        let d=document.createElement('div'); d.className="fx-slot";
+        if(f.renderUI) f.renderUI(d, i);
+        else d.innerHTML=`<div class="data-font" style="padding:10px; display:flex; justify-content:space-between"><span>${f.name}</span> <button onclick="removeFX(${i})">DEL</button></div>`;
+        ui.appendChild(d);
+    });
+};
+
+const exportSession=async()=>{
+    const zip=new JSZip();
+    const proj={
+        bpm:$('bpm').value,
+        S,
+        mVol:$('mVol').value,
+        mode: m, 
+        swing: { val: $('swAmt').value, code: swingCodeStore },
+        fx:window_fxR.map(f=>({id:f.id,name:f.name,code:f._originalCode,state:f.getState?f.getState():{}})),
+        banks:banks.map(bn=>bn.map(t=>({s:t.s,oct:t.oct,route:t.route,fileName:t.fileName,vol:t.vV.gain.value})))
+    };
+    zip.file("project.json",JSON.stringify(proj));
+    banks[0].forEach(t=>{if(t.rawBlob)zip.file(`samples/${t.fileName}`,t.rawBlob);});
+    const b=await zip.generateAsync({type:"blob"});
+    const l=document.createElement('a'); l.href=URL.createObjectURL(b); l.download=`SESSION.omikuji`; l.click();
+};
+
+async function importSession(e) {
+    await initA();
+    let f=e.target.files[0]; if(!f) return;
+    log("IMPORTING SESSION...");
+    try {
+        const zip = await JSZip.loadAsync(f);
+        const proj = JSON.parse(await zip.file("project.json").async("string"));
+        banks = Array.from({length:8},()=>[]);
+        window_fxR = [];
+        
+        if(proj.mode !== undefined) {
+            m = proj.mode;
+            $('mB').innerText = m ? 'MODE:SONG' : 'MODE:PAT';
+        }
+
+        if(proj.swing) {
+            $('swAmt').value = proj.swing.val;
+            if(proj.swing.code) {
+                swingCodeStore = proj.swing.code;
+                const blob = new Blob([swingCodeStore], { type: 'text/javascript' });
+                const url = URL.createObjectURL(blob);
+                const mod = await import(url + '#' + Date.now());
+                swingEngine = mod.default || mod;
+                log(`SWING RESTORED`);
+            }
+        }
+
+        for(let fx of proj.fx){
+            let ins = await _inject(fx.code, fx.name, fx.id);
+            if(ins.setState) ins.setState(fx.state);
+        }
+        for(let bi=0; bi<8; bi++){
+            for(let ti=0; ti<proj.banks[bi].length; ti++){
+                let pT = proj.banks[bi][ti];
+                let track = {s:pT.s, oct:pT.oct, buf:null, rawBlob:null, fileName:pT.fileName, vV:ctx.createGain(), route:pT.route, activeSources:[]};
+                track.vV.gain.value = pT.vol;
+                let sFile = zip.file(`samples/${pT.fileName}`);
+                if(sFile){
+                    track.rawBlob = await sFile.async("blob");
+                    track.buf = await ctx.decodeAudioData(await track.rawBlob.arrayBuffer());
+                }
+                banks[bi].push(track);
+            }
+        }
+        S=proj.S; $('bpm').value=proj.bpm; $('mVol').value=proj.mVol;
+        renderRack(); renderFX(); updateTD(); up();
+        log("SESSION LOADED.");
+    } catch(err) { log(`IMPORT ERROR: ${err.message}`); }
+}
+
+const drS=()=>{
+    let controls = `<div class="arr-ctrl"><button class="arr-btn" onclick="S.push(0);up()">+</button><button class="arr-btn" onclick="S.pop();up()" style="color:#2979ff">-</button></div>`;
+    let blocks = S.map((p,i)=>`<div class="song-block" style="background:${(m&&run&&si-1==i)?'var(--ice-bright)':'#151a21'};color:${(m&&run&&si-1==i)?'#000':'var(--ice-bright)'};border-color:${(m&&run&&si-1==i)?'var(--ice-bright)':'#2a3540'}; box-shadow:${(m&&run&&si-1==i)?'var(--ice-glow)':'none'}" onclick="S[${i}]=(S[${i}]+1)%8;up()">P${p+1}</div>`).join('');
+    $('song-slots').innerHTML = controls + blocks;
+};
+
+const up=()=>{
+    $('pattern-nav').innerHTML=[0,1,2,3,4,5,6,7].map(i=>`<button onclick="b=${i};up()" style="flex:1;background:${b==i?'var(--ice-bright)':'#0f141a'};color:${b==i?'#000':'var(--ice-bright)'}; padding:2px; font-size:10px; box-shadow:${b==i?'var(--ice-glow)':'none'}">${i+1}</button>`).join('');
+    if(banks[b]){
+        banks[b].forEach((t,ti)=>{
+            for(let i=0;i<16;i++){
+                let st=t.s[i];
+                let el=$(`s-${ti}-${i}`);
+                if(el){
+                    el.style.background=st.on?(cur==i?"var(--ice-bright)":"#000"):(cur==i?"#37474f":(i%4==0?"#1c2530":"#151a21"));
+                    if(st.on && cur==i) {
+                        el.style.borderColor = "var(--ice-bright)";
+                        el.style.boxShadow = "var(--ice-glow)";
+                    } else if(st.on) {
+                        el.style.borderColor = "#fff";
+                    } else {
+                        el.style.borderColor = "#2a3540";
+                        el.style.boxShadow = "none";
+                    }
+                    $(`v-bar-${ti}-${i}`).style.height=(st.v*100)+"%"; 
+                    $(`v-bar-${ti}-${i}`).style.opacity=st.on?1:0.2;
+                }
+            }
+        });
+    }
+    drS();
+};
+
+const renderPiano=(ti)=>{
+    let g=$(`pg-${ti}`); g.innerHTML=''; let oct=banks[0][ti].oct;
+    for(let j=0;j<16;j++){
+        let col=document.createElement('div'); col.className="step-col";
+        let currentNote = banks[b][ti].s[j];
+        NOTES.forEach(n=>{
+            let m=([24,23,22,21,20,19,18,17,16,15,14,13,12][NOTES.indexOf(n)])+(oct*12);
+            let f=440*Math.pow(2,(m-69)/12);
+            let fFix = parseFloat(f.toFixed(2));
+            let k=document.createElement('div'); k.className=`piano-key pk-${ti}-${j}`; 
+            if(currentNote.on && Math.abs(currentNote.freq - fFix) < 0.1) k.classList.add('key-active');
+            k.innerText=n+(oct+1);
+            k.onclick=(e)=>{
+                e.stopPropagation();
+                if(currentNote.on && Math.abs(currentNote.freq - fFix) < 0.1) banks[b][ti].s[j].on = 0; 
+                else { banks[b][ti].s[j].freq=fFix; banks[b][ti].s[j].on=1; }
+                up(); renderPiano(ti); 
+            }; 
+            col.appendChild(k);
+        });
+        g.appendChild(col);
+    }
+};
+
+const renderRack=()=>{
+    let r=$('rack'); r.innerHTML='';
+    banks[0].forEach((t,i)=>{
+        let d=document.createElement('div'); d.className="track-row";
+        d.innerHTML=`
+        <div class="track-controls">
+            <div class="ctrl-row">
+                <span class="data-font" style="font-weight:bold">T${i+1}</span>
+                <div>
+                    <button class="tiny-btn" onclick="toggleP(${i})">P</button>
+                    <button class="tiny-btn del-btn" onclick="remT(${i}, event)">X</button>
+                </div>
+            </div>
+            <div class="file-name" title="${t.fileName}">${t.fileName}</div>
+            <div class="ctrl-row" style="gap:2px">
+                <button onclick="this.nextElementSibling.click()" class="tiny-btn" style="flex:1">L</button>
+                <input type="file" style="display:none" onchange="ld(${i},event)">
+                <select class="route-select" style="width:60px; height:15px; font-size:9px" onchange="banks.forEach(bn=>bn[${i}].route=this.value)"></select>
+            </div>
+            <input type="range" min="0" max="1" step="0.01" value="${t.vV.gain.value}" oninput="banks.forEach(bn=>bn[${i}].vV.gain.value=this.value)" style="height:10px; margin-top:2px">
+        </div>
+        <div style="flex:1">
+            <div class="step-grid" id="steps-${i}"></div>
+            <div class="step-grid" style="margin-top:2px" id="vels-${i}"></div>
+            <div id="piano-${i}" class="piano-drawer">
+                <div class="data-font">OCTAVE: <input type="range" min="0" max="6" step="1" value="${t.oct}" oninput="banks.forEach(bn=>bn[${i}].oct=parseInt(this.value));renderPiano(${i});up()"></div>
+                <div class="step-grid" id="pg-${i}" style="margin-top:8px"></div>
+            </div>
+        </div>`;
+        r.appendChild(d);
+        for(let j=0;j<16;j++){
+            let c1=document.createElement('div'); c1.className="step-col"; let s=document.createElement('div'); s.id=`s-${i}-${j}`; s.className="step"; s.onclick=()=>{banks[b][i].s[j].on=1-banks[b][i].s[j].on; up(); renderPiano(i);}; c1.appendChild(s); $(`steps-${i}`).appendChild(c1);
+            let c2=document.createElement('div'); c2.className="step-col"; let v=document.createElement('div'); v.className="v-box"; v.innerHTML=`<div id="v-bar-${i}-${j}" class="v-bar"></div>`; v.onmousedown=e=>{let rect=v.getBoundingClientRect(); banks[b][i].s[j].v=Math.max(0,Math.min(1,1-((e.clientY-rect.top)/rect.height))); up();}; c2.appendChild(v); $(`vels-${i}`).appendChild(c2);
+        }
+        renderPiano(i);
+    });
+    updateTD(); up();
+};
+
+const addT=()=>{ initA(); banks.forEach(bn=>bn.push({s:Array.from({length:16},()=>({on:0,v:0.8,freq:65.41})),oct:2,buf:null,rawBlob:null,fileName:"NO_SAMPLE",vV:ctx.createGain(),route:"MASTER",activeSources:[]})); renderRack(); };
+const remT=(idx, e)=>{ 
+    if(e) e.stopPropagation();
+    let i = parseInt(idx);
+    banks.forEach(bn=>{ 
+        if(bn[i] && bn[i].activeSources) bn[i].activeSources.forEach(s=>{try{s.stop()}catch(e){}}); 
+        bn.splice(i,1); 
+    }); 
+    renderRack(); 
+};
+
+const tab=t=>{ $('page-seq').style.display=t=='seq'?'flex':'none'; $('page-fx').style.display=t=='fx'?'flex':'none'; $('tSeq').style.background=t=='seq'?'var(--ice-bright)':'#0f141a'; $('tSeq').style.color=t=='seq'?'#000':'var(--ice-bright)'; $('tSeq').style.boxShadow=t=='seq'?'var(--ice-glow)':'none'; $('tFx').style.background=t=='fx'?'var(--ice-bright)':'#0f141a'; $('tFx').style.color=t=='fx'?'#000':'var(--ice-bright)'; $('tFx').style.boxShadow=t=='fx'?'var(--ice-glow)':'none'; };
+const updateTD=()=>{ document.querySelectorAll('.route-select').forEach((sel,i)=>{ let v=banks[0][i].route; sel.innerHTML='<option value="MASTER">MASTER</option>'; window_fxR.forEach(f=>sel.innerHTML+=`<option value="${f.id}">${f.id}</option>`); sel.value=v; }); };
+async function _inject(code, name, id=null) { 
+    const blob = new Blob([code], { type: 'text/javascript' });
+    const mod = await import(URL.createObjectURL(blob) + '#' + Date.now());
+    const Cls = mod.default || Object.values(mod)[0];
+    const ins = new Cls(ctx);
+    ins.id = id || "FX_" + Math.random().toString(36).substr(2, 4).toUpperCase();
+    ins.name = name;
+    ins._originalCode = code;
+    if (ins.output) ins.output.connect(mG);
+    window_fxR.push(ins);
+    renderFX(); return ins; 
+}
+async function injectPlugin(e) { let f=e.target.files[0]; if(!f)return; let c=await f.text(); await _inject(c, f.name); updateTD(); }
+const ld=async(i,e)=>{ let f=e.target.files[0]; if(!f)return; let d=await ctx.decodeAudioData(await f.arrayBuffer()); banks.forEach(bn=>{bn[i].buf=d; bn[i].fileName=f.name.toUpperCase(); bn[i].rawBlob=f;}); renderRack(); };
+const armRec=()=>{ initA(); armed=1; chunks=[]; $('armB').innerText="ARMED"; $('armB').style.background="var(--ice-bright)"; $('armB').style.color="#000"; $('armB').style.boxShadow="var(--ice-glow)"; };
+const exportWav=()=>{let a=document.createElement('a'); a.href=$('prev').src; a.download=`REC.wav`; a.click()};
+const toggleP=i=>{ let d=$(`piano-${i}`); d.style.display=d.style.display=='block'?'none':'block'; };
+const copyP=()=>{ clip = JSON.parse(JSON.stringify(banks[b].map(t=>t.s))); log(`COPIED PATTERN ${b+1}`); };
+const pasteP=()=>{ if(!clip)return; banks[b].forEach((t,i)=>{ t.s = JSON.parse(JSON.stringify(clip[i])); }); up(); log(`PASTED TO PATTERN ${b+1}`); };
+
+addT();
+</script>
+</body>
+</html>
