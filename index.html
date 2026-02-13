@@ -1,8 +1,7 @@
-<!DOCTYPE html>
-<html>
-<head>
+
+<!DOCTYPE html><html><head>
     <meta charset="UTF-8">
-    <title>OMIKUJI // MASTER_CORE_v33.1_SCROLL_FIX</title>
+    <title>OMIKUJI // MASTER_CORE_v34.2_INSTRUMENT_FIX</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         @font-face { font-family: 'NIN'; src: url('nin.ttf'); } 
@@ -18,8 +17,10 @@
             --text-color: #b0bec5;
         }
 
+        *, *::before, *::after { box-sizing: border-box; }
+
         body {
-            font-family: 'NIN';
+            font-family: 'NIN', monospace;
             background: var(--bg-dark);
             color: var(--text-color);
             padding: 20px;
@@ -27,7 +28,6 @@
             user-select: none;
             overflow: hidden; 
             height: 100vh;
-            box-sizing: border-box;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -39,16 +39,13 @@
             height: 95vh;
             background: var(--chassis-bg);
             border: 4px solid #1c2530;
-            outline: 2px solid var(--ice-dim); /* Double border look */
+            outline: 2px solid var(--ice-dim);
             padding: 15px;
             box-shadow: 0 0 30px rgba(0, 229, 255, 0.1);
             color: var(--ice-bright);
             display: flex;
             flex-direction: column;
-            box-sizing: border-box;
             position: relative;
-            opacity: 0; 
-            transition: opacity 0.5s;
         }
 
         /* SCREWS */
@@ -59,29 +56,14 @@
             box-shadow: inset 1px 1px 2px rgba(255,255,255,0.1), 1px 1px 1px rgba(0,0,0,0.5);
             z-index: 20;
         }
-        .screw::after { /* Phillips head cross */
-            content: ''; position: absolute; top: 2px; left: 5px; width: 2px; height: 8px; background: #000; opacity: 0.6;
-        }
-        .screw::before {
-            content: ''; position: absolute; top: 5px; left: 2px; width: 8px; height: 2px; background: #000; opacity: 0.6;
-        }
+        .screw::after { content: ''; position: absolute; top: 2px; left: 5px; width: 2px; height: 8px; background: #000; opacity: 0.6; }
+        .screw::before { content: ''; position: absolute; top: 5px; left: 2px; width: 8px; height: 2px; background: #000; opacity: 0.6; }
         .tl { top: 6px; left: 6px; transform: rotate(45deg); }
         .tr { top: 6px; right: 6px; transform: rotate(15deg); }
         .bl { bottom: 6px; left: 6px; transform: rotate(-20deg); }
         .br { bottom: 6px; right: 6px; transform: rotate(60deg); }
 
-        /* BOOT OVERLAY */
-        #boot-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; color: var(--ice-bright);
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 9999; font-family: 'DATA'; cursor: pointer;
-            text-shadow: var(--ice-glow);
-        }
-        .blink { animation: bl 0.1s infinite; }
-        @keyframes bl { 0%,100%{opacity:1} 50%{opacity:0.7} }
-        
-        /* HARDWARE FLASH EFFECT (FROST) */
+        /* HARDWARE FLASH EFFECT */
         .hw-flash {
             background: var(--ice-bright) !important;
             color: #000 !important;
@@ -98,10 +80,10 @@
             box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
         }
         .mb { margin-bottom: 10px; }
-        .data-font { font-family: 'DATA'; font-size: 10px; letter-spacing: 1px; color: #546e7a; text-shadow:none; }
+        .data-font { font-family: 'DATA', monospace; font-size: 10px; letter-spacing: 1px; color: #546e7a; text-shadow:none; }
         
         button { 
-            font-family: 'DATA'; border: 1px solid #2a3540; background: #0f141a; color: var(--ice-bright); 
+            font-family: 'DATA', monospace; border: 1px solid #2a3540; background: #0f141a; color: var(--ice-bright); 
             cursor: pointer; padding: 5px 10px; font-size: 11px; transition: 0.1s; 
             box-shadow: 0 0 5px rgba(0,229,255,0.05);
         }
@@ -115,14 +97,12 @@
 
         #page-seq, #page-fx { flex-grow: 1; display: flex; flex-direction: column; overflow: hidden; min-height: 0; margin-bottom: 10px; }
         
-        /* SCROLLABLE RACK & FX CONTAINER - ICE STYLE */
         #rack, #fx-rack { 
             flex-grow: 1; overflow-y: auto; overflow-x: hidden; 
             border: 1px solid #2a3540; background: #080a0c; 
             padding: 4px; height: 100%; 
         }
 
-        /* SHARED SCROLLBAR STYLES */
         #rack::-webkit-scrollbar, #fx-rack::-webkit-scrollbar { width: 8px; }
         #rack::-webkit-scrollbar-track, #fx-rack::-webkit-scrollbar-track { background: #0b1015; border-left: 1px solid #2a3540; }
         #rack::-webkit-scrollbar-thumb, #fx-rack::-webkit-scrollbar-thumb { background: var(--ice-dim); border: 1px solid #000; }
@@ -131,8 +111,8 @@
         .step-grid { display: flex; gap: 3px; } 
         .step-col { width: 50px; flex-shrink: 0; display: flex; flex-direction: column; gap: 2px; }
         
-        /* STEPS: Dark by default */
-        .step { height: 20px; border: 1px solid #2a3540; cursor: pointer; background: #151a21; width: 50px; box-sizing: border-box; transition: background 0.05s; }
+        /* STEPS */
+        .step { height: 20px; border: 1px solid #2a3540; cursor: pointer; background: #151a21; width: 50px; transition: background 0.05s; }
         
         .v-box { height: 35px; border: 1px solid #2a3540; position: relative; cursor: ns-resize; width: 50px; background:#151a21; }
         .v-bar { position: absolute; bottom: 0; width: 100%; background: var(--ice-bright); pointer-events: none; opacity: 0.5; }
@@ -140,12 +120,11 @@
         .piano-drawer { display:none; background:#0f141a; border-top:1px solid var(--ice-bright); margin-top:5px; padding:5px; box-shadow:inset 0 0 10px #000; }
         .piano-key { height: 14px; border: 1px solid #2a3540; cursor: pointer; font-size: 7px; display: flex; align-items: center; justify-content: center; background: #151a21; color: #546e7a; width: 50px; margin-bottom:1px; transition: background 0.05s; }
         
-        /* ACTIVE STATES: GLOWING CYAN */
         .key-active { background: #000 !important; color: var(--ice-bright) !important; border: 1px solid var(--ice-bright) !important; font-weight:bold; box-shadow: 0 0 8px var(--ice-bright); }
         
-        #monitor-panel { background: #000; color: var(--ice-bright); padding: 10px; height: 30px; font-family: 'DATA'; font-size: 9px; overflow-y: auto; border-top: 1px solid var(--ice-bright); flex-shrink: 0; text-shadow: 0 0 2px var(--ice-bright); }
+        #monitor-panel { background: #000; color: var(--ice-bright); padding: 10px; height: 30px; font-family: 'DATA', monospace; font-size: 9px; overflow-y: auto; border-top: 1px solid var(--ice-bright); flex-shrink: 0; text-shadow: 0 0 2px var(--ice-bright); }
         
-        .song-block { width:30px; height:30px; border:1px solid #2a3540; display:flex; align-items:center; justify-content:center; cursor:pointer; font-family:'DATA'; font-size:10px; font-weight:bold; background:#151a21; color:var(--ice-bright); transition: background 0.05s; }
+        .song-block { width:30px; height:30px; border:1px solid #2a3540; display:flex; align-items:center; justify-content:center; cursor:pointer; font-family:'DATA', monospace; font-size:10px; font-weight:bold; background:#151a21; color:var(--ice-bright); transition: background 0.05s; }
         
         .fx-slot { border: 1px solid #2a3540; margin-bottom: 10px; background: #151a21; color: var(--ice-bright); }
         .bpm-btn { padding: 2px 5px; font-size: 8px; line-height: 1; }
@@ -163,13 +142,83 @@
         .file-name { font-size:8px; color:var(--ice-bright); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:120px; text-shadow: 0 0 2px rgba(0,229,255,0.5); }
         
         select { background: #000; color: var(--ice-bright); border: 1px solid #2a3540; }
+
+        /* --- PRO PLAYHEAD GUTTER --- */
+        #playhead-gutter {
+            display: flex; gap: 3px; padding: 0 4px; 
+            margin: 5px 0 0 132px; 
+            height: 10px; flex-shrink: 0;
+        }
+
+        .led { width: 50px; height: 4px; background: #1c2530; border-radius: 2px; transition: background 0.05s, box-shadow 0.05s; }
+        .led-active { background: var(--ice-bright); box-shadow: var(--ice-glow); }
+
+        /* --- SAMPLER CONSOLE OVERLAY --- */
+        #sampler-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(2, 2, 5, 0.95);
+            z-index: 100;
+            display: none;
+            align-items: center; justify-content: center;
+        }
+        .sampler-box {
+            width: 600px; max-width: 95vw; 
+            background: var(--chassis-bg);
+            border: 2px solid var(--ice-bright);
+            box-shadow: 0 0 50px rgba(0,229,255,0.2);
+            padding: 20px;
+            display: flex; flex-direction: column; gap: 10px;
+            position: relative;
+        }
+        .sampler-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a3540; padding-bottom: 10px; margin-bottom: 10px; }
+        
+        .cvs-wrap { width: 100%; height: 150px; background:#000; border: 1px solid #2a3540; position: relative; }
+        canvas { display: block; width: 100%; height: 100%; }
+
+        .param-row { display: flex; gap: 20px; margin-top: 10px; }
+        .param-group { border: 1px solid #2a3540; padding: 10px; flex: 1; display: flex; flex-direction: column; gap: 5px; }
+        .p-label { font-size: 9px; color: #546e7a; margin-bottom: 2px; display: flex; justify-content: space-between; }
     </style>
 </head>
 <body>
 
-<div id="boot-screen" onclick="bootSystem()">
-    <div style="font-size:24px; margin-bottom:10px; letter-spacing:4px">SUB_ZERO_CORE</div>
-    <div class="blink" style="color:#fff">>> INITIALIZE_SYSTEM <<</div>
+<div id="sampler-overlay">
+    <div class="sampler-box">
+        <div class="sampler-header">
+            <div class="data-font" style="font-size: 14px; color: var(--ice-bright)">SAMPLER CONSOLE</div>
+            <div style="display:flex; gap:10px">
+                <button onclick="previewNote()" style="width:40px; border-color:var(--ice-bright); background:var(--ice-dim); color:#fff;">[ T ]</button>
+                <button onclick="closeSampler()" style="background:#f44; color:#fff; border-color:#f44">CLOSE</button>
+            </div>
+        </div>
+        
+        <div class="cvs-wrap">
+            <canvas id="waveCanvas" width="560" height="150"></canvas>
+        </div>
+
+        <div class="data-font" id="smp-info" style="text-align: right; margin-top: 5px;">NO_SAMPLE_LOADED</div>
+        
+        <div class="param-row">
+            <div class="param-group">
+                <div class="data-font" style="color:#fff; border-bottom:1px solid #2a3540; margin-bottom:5px">FILTER (24dB)</div>
+                <div class="p-label"><span>CUTOFF</span><span id="val-cut">20k</span></div>
+                <input type="range" id="sl-cut" min="0" max="1" step="0.001" oninput="updSmpParams()">
+                <div class="p-label"><span>RES</span><span id="val-res">0</span></div>
+                <input type="range" id="sl-res" min="0" max="20" step="0.1" oninput="updSmpParams()">
+            </div>
+            <div class="param-group">
+                <div class="data-font" style="color:#fff; border-bottom:1px solid #2a3540; margin-bottom:5px">ENVELOPE (ADSR)</div>
+                <div class="p-label"><span>ATTACK</span><span id="val-att">0</span></div>
+                <input type="range" id="sl-att" min="0" max="1" step="0.001" oninput="updSmpParams()">
+                <div class="p-label"><span>DECAY</span><span id="val-dec">0</span></div>
+                <input type="range" id="sl-dec" min="0" max="1" step="0.001" oninput="updSmpParams()">
+                <div class="p-label"><span>SUSTAIN</span><span id="val-sus">0</span></div>
+                <input type="range" id="sl-sus" min="0" max="1" step="0.01" oninput="updSmpParams()">
+                <div class="p-label"><span>RELEASE</span><span id="val-rel">0</span></div>
+                <input type="range" id="sl-rel" min="0" max="1" step="0.001" oninput="updSmpParams()">
+            </div>
+        </div>
+    </div>
 </div>
 
 <div id="chassis">
@@ -183,7 +232,7 @@
             <button id="pB" onclick="play()">PLAY</button>
             <div class="data-font" style="display:flex; align-items:center; gap:4px">
                 BPM 
-                <input id="bpm" value="120" style="width:35px; text-align:center">
+                <input id="bpm" value="120" style="width:35px; text-align:center" onchange="markDirty()">
                 <div style="display:flex; flex-direction:column; gap:1px">
                     <button class="bpm-btn" onclick="adjBPM(1,event)">▲</button>
                     <button class="bpm-btn" onclick="adjBPM(-1,event)">▼</button>
@@ -215,6 +264,8 @@
         <div id="pattern-nav" style="display:flex; gap:5px; height:20px; background:#000; border-left:2px solid #2a3540; border-right:2px solid #2a3540; padding:2px; flex-shrink:0;"></div>
         
         <div id="rack"></div>
+        
+        <div id="playhead-gutter"></div>
     </div>
 
     <div id="page-fx" style="display:none">
@@ -230,9 +281,9 @@
     <div class="panel-fixed mb" style="display:grid;grid-template-columns:1fr 1fr;gap:20px; padding:5px 10px">
         <div>
             <div class="data-font">MASTER / SWING</div>
-            <input type="range" min="0" max="1.5" step="0.01" value="1" id="mVol" oninput="if(mG)mG.gain.value=this.value">
+            <input type="range" min="0" max="1.5" step="0.01" value="1" id="mVol" oninput="markDirty(); if(mG)mG.gain.value=this.value">
             <div style="display:flex; gap:10px; margin-top:5px; align-items:center">
-                <input type="range" id="swAmt" min="0" max="1" step="0.01" value="0">
+                <input type="range" id="swAmt" min="0" max="1" step="0.01" value="0" oninput="markDirty()">
                 <button onclick="$('swLdr').click()" class="tiny-btn">LOAD_SWING</button>
                 <input type="file" id="swLdr" style="display:none" onchange="loadSwing(event)">
             </div>
@@ -247,21 +298,38 @@
         </div>
     </div>
 
-    <div id="monitor-panel"><div id="log-out">> SYSTEM_FROZEN...</div></div>
+    <div id="monitor-panel"><div id="log-out">> OMIKUJI_SYSTEM_READY</div></div>
 </div>
 
 <script>
 /** ENGINE CORE **/
-let ctx, b=0, m=0, cur=0, nxt=0, S=[0,0,1,1], tID, si=0, run=0, banks=Array.from({length:8},()=>[]), mG, dest, rec, chunks=[], armed=0, isRec=0, clip=null;
+let ctx, b=0, m=0, cur=0, nxt=0, S=[0,0,1,1], tID, si=0, run=0, mG, dest, rec, chunks=[], armed=0, isRec=0, clip=null;
 window.window_fxR = [];
 let swingEngine = { name:"STRAIGHT", getOffset: (s, a) => 0 };
-let swingCodeStore = ""; // Stores raw JS for swing engine
+let swingCodeStore = ""; 
+let activeTrackEdit = -1; 
+let samplerCanvas, samplerCtx, cacheCanvas, cacheCtx;
+let samplerPlayStart = 0, samplerPlayDur = 0, samplerAnimID;
+
+/* --- NEW GLOBAL ARCHITECTURE --- */
+let tracks = [];
+let patterns = Array.from({length:8},()=>[]); 
+
+/* --- SECURITY & SESSION STATE --- */
+let isDirty = false;
+const markDirty = () => { isDirty = true; };
+const SYS_KEY = "OMIKUJI_CORE_V33_SECRET_KEY"; 
+const _xor = (txt) => { let res = ""; for(let i=0; i<txt.length; i++) res += String.fromCharCode(txt.charCodeAt(i) ^ SYS_KEY.charCodeAt(i % SYS_KEY.length)); return res;};
+const encodeSys = (obj) => { try { return btoa(_xor(JSON.stringify(obj))); } catch(e) { return null; }};
+const decodeSys = (str) => { try { return JSON.parse(_xor(atob(str))); } catch(e) { throw new Error("CORRUPT"); }};
+window.addEventListener('beforeunload', (e) => { if (isDirty) { e.preventDefault(); e.returnValue = ''; }});
 
 const NOTES = ["C", "B", "A#", "A", "G#", "G", "F#", "F", "E", "D#", "D", "C#", "C"];
-const $=id=>document.getElementById(id), log=msg=>{$('log-out').innerHTML+=`<div>${msg}</div>`;$('monitor-panel').scrollTop=9999};
+const $=id=>document.getElementById(id);
+const log=msg=>{$('log-out').innerHTML+=`<div>${msg}</div>`;$('monitor-panel').scrollTop=9999};
 
-/* --- BOOT SEQUENCE LOGIC --- */
-const bootSystem = async () => {
+/* --- SYSTEM INIT --- */
+const initA=async()=>{ 
     if(!ctx) {
         ctx = new AudioContext();
         mG = ctx.createGain(); mG.connect(ctx.destination);
@@ -269,62 +337,24 @@ const bootSystem = async () => {
         rec = new MediaRecorder(dest.stream); 
         rec.ondataavailable=e=>{if(e.data.size>0)chunks.push(e.data)};
         rec.onstop=()=>{let blob=new Blob(chunks,{type:'audio/wav'}); $('prev').src=URL.createObjectURL(blob); $('prev').style.display=$('expB').style.display='block';};
+        
+        samplerCanvas = $('waveCanvas');
+        samplerCtx = samplerCanvas.getContext('2d');
+        cacheCanvas = document.createElement('canvas');
+        cacheCanvas.width = 560; cacheCanvas.height = 150;
+        cacheCtx = cacheCanvas.getContext('2d');
+        log("> AUDIO_CORE_INITIALIZED");
     }
     if(ctx.state === 'suspended') await ctx.resume();
-
-    const screen = $('boot-screen');
-    const chassis = $('chassis');
-    screen.style.display = 'none';
-    chassis.style.opacity = '1';
-    
-    // SOUND
-    let now = ctx.currentTime;
-    let osc = ctx.createOscillator();
-    let gain = ctx.createGain();
-    osc.type = 'sawtooth'; 
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    
-    let steps = 12; let stepDur = 0.06; 
-    osc.frequency.setValueAtTime(110, now);
-    for(let i=0; i<steps; i++) {
-        let t = now + (i * stepDur);
-        osc.frequency.setValueAtTime(110 * Math.pow(1.15, i), t);
-        gain.gain.setValueAtTime(0, t);
-        gain.gain.linearRampToValueAtTime(0.2, t + 0.01);
-        gain.gain.linearRampToValueAtTime(0, t + stepDur - 0.01);
-    }
-    osc.start(now);
-    osc.stop(now + (steps * stepDur) + 0.5);
-
-    // LIGHT SHOW
-    let elements = document.querySelectorAll('.song-block, #pattern-nav button, .step, .piano-key, .tiny-btn');
-    elements.forEach((el, i) => {
-        if(Math.random() > 0.6) {
-            let d = Math.random() * 600; 
-            setTimeout(() => {
-                el.classList.add('hw-flash');
-                setTimeout(() => el.classList.remove('hw-flash'), 100);
-            }, d);
-        }
-    });
-
-    log("> CRYOGENIC_STASIS_CHECK... OK");
-    setTimeout(()=>log("> MEMORY_CORE... OK"), 200);
-    setTimeout(()=>log("> SUB_ZERO_ENGINE_ONLINE"), 400);
 };
 
-const adjBPM=(val,e)=>{ let el=$('bpm'); let v=parseInt(el.value); let step=e.shiftKey?5:1; el.value=v+(val*step); };
-
-const initA=async()=>{ 
-    if(!ctx) return;
-    if(ctx.state === 'suspended') await ctx.resume();
-};
+const adjBPM=(val,e)=>{ markDirty(); let el=$('bpm'); let v=parseInt(el.value); let step=e.shiftKey?5:1; el.value=v+(val*step); };
 
 async function loadSwing(e) {
+    markDirty();
     let f = e.target.files[0]; if (!f) return;
     try {
-        swingCodeStore = await f.text(); // Capture raw code for export
+        swingCodeStore = await f.text(); 
         const blob = new Blob([swingCodeStore], { type: 'text/javascript' });
         const url = URL.createObjectURL(blob);
         const mod = await import(url + '#' + Date.now());
@@ -332,6 +362,63 @@ async function loadSwing(e) {
         log(`SWING ENGINE LOADED: ${swingEngine.name}`);
     } catch (err) { log(`SWING ERROR: ${err.message}`); }
 }
+
+// Trigger sound from Global Track Object
+const triggerTrackSound = (t, freq, time, vel) => {
+    // 1. TRIGGER PLUGIN (INSTRUMENT OR EFFECT)
+    let fx = window_fxR.find(f => f.id === t.route);
+    if (fx && typeof fx.noteOn === 'function') {
+        fx.noteOn(freq, time, vel);
+    }
+
+    // 2. PLAY SAMPLE (IF EXISTS)
+    if(!t.buf) return null; // Exit if no sample (Instrument-only track)
+
+    let envGain = ctx.createGain(); envGain.gain.value = 0;
+    
+    // CREAMY FILTER CHAIN (24dB/Octave)
+    let filt1 = ctx.createBiquadFilter();
+    let filt2 = ctx.createBiquadFilter();
+    let qVal = t.filter.res;
+
+    filt1.type = "lowpass"; filt1.frequency.value = t.filter.cut; filt1.Q.value = qVal;
+    filt2.type = "lowpass"; filt2.frequency.value = t.filter.cut; filt2.Q.value = qVal;
+    
+    envGain.connect(t.vV); 
+    
+    // ROUTING: Sample -> Plugin Input OR Master
+    t.vV.disconnect(); 
+    if(fx && fx.input){ 
+        t.vV.connect(fx.input); 
+    } else {
+        t.vV.connect(mG); // Layer sample with Synth (parallel) or just sample
+    }
+    
+    if(t.activeSources.length){ 
+        t.activeSources.forEach(s=>{try{s.source.stop(time)}catch(e){}}); 
+        t.activeSources=[]; 
+    }
+    
+    let s=ctx.createBufferSource(); 
+    s.buffer=t.buf; s.playbackRate.setValueAtTime(freq/65.41,time);
+    let velGain = ctx.createGain(); velGain.gain.value = vel; 
+    
+    s.connect(velGain); 
+    velGain.connect(filt1);
+    filt1.connect(filt2); 
+    filt2.connect(envGain);
+    
+    let a=t.env.a, d=t.env.d, sus=t.env.s;
+    envGain.gain.setValueAtTime(0, time);
+    envGain.gain.linearRampToValueAtTime(1, time + a);
+    envGain.gain.exponentialRampToValueAtTime(Math.max(0.001, sus), time + a + d);
+    s.start(time); 
+    
+    let voiceObj = { source: s, env: envGain, f1: filt1, f2: filt2 };
+    t.activeSources.push(voiceObj);
+    
+    return voiceObj;
+};
 
 const sch=()=>{
     if(!run) return;
@@ -341,34 +428,22 @@ const sch=()=>{
         if(m&&cur===0){ b=S[si]; si=(si+1)%S.length; } 
         let off = swingEngine.getOffset(cur, parseFloat($('swAmt').value)) * secPerStep;
         let time = nxt + off;
-
-        if(banks[b]){
-            banks[b].forEach(t=>{
-                let st=t.s[cur];
-                if(st.on){
-                    t.vV.disconnect(); t.vV.connect(mG);
-                    let fx=window_fxR.find(f=>f.id===t.route);
-                    if(fx&&fx.input){t.vV.disconnect(); t.vV.connect(fx.input); if(fx.output) fx.output.connect(mG);}
-                    if(fx&&typeof fx.noteOn==='function')fx.noteOn(st.freq,time,st.v);
-                    
-                    if(t.buf){
-                        if(t.activeSources.length){
-                            t.activeSources.forEach(s=>{try{s.stop(time)}catch(e){}}); 
-                            t.activeSources=[];
+        if(patterns[b]){
+            tracks.forEach((t, idx)=>{
+                if(patterns[b][idx]) {
+                    let st = patterns[b][idx][cur];
+                    if(st && st.on){
+                        triggerTrackSound(t, st.freq, time, st.v);
+                        if(idx === activeTrackEdit) {
+                            samplerPlayStart = time;
+                            samplerPlayDur = t.buf ? t.buf.duration * (65.41/st.freq) : 0;
                         }
-                        let s=ctx.createBufferSource(); 
-                        s.buffer=t.buf; 
-                        s.playbackRate.setValueAtTime(st.freq/65.41,time);
-                        let vG=ctx.createGain(); vG.gain.value=st.v; s.connect(vG); vG.connect(t.vV);
-                        s.start(time); 
-                        t.activeSources.push(s);
                     }
                 }
             });
         }
         setTimeout(up,(nxt-ctx.currentTime)*1000); 
-        nxt+=secPerStep; 
-        cur=(cur+1)%16;
+        nxt+=secPerStep; cur=(cur+1)%16;
     }
     tID=setTimeout(sch,25);
 };
@@ -376,39 +451,26 @@ const sch=()=>{
 const play=async()=>{
     await initA(); run=!run; 
     let btn = $('pB');
-    if(run) {
-        btn.style.background = "var(--ice-bright)";
-        btn.style.color = "#000";
-        btn.style.boxShadow = "var(--ice-glow)";
-    } else {
-        btn.style.background = "";
-        btn.style.color = "var(--ice-bright)";
-        btn.style.boxShadow = "";
-    }
-
+    if(run) { btn.style.background = "var(--ice-bright)"; btn.style.color = "#000"; btn.style.boxShadow = "var(--ice-glow)"; } 
+    else { btn.style.background = ""; btn.style.color = "var(--ice-bright)"; btn.style.boxShadow = ""; }
     if(run){ if(armed){chunks=[]; rec.start(); isRec=1;} cur=0; si=0; nxt=ctx.currentTime; sch(); }
     else { 
         if(isRec){rec.stop(); isRec=0; armed=0; $('armB').innerText="ARM REC"; $('armB').style.background="#fff"; $('armB').style.color="#000";} 
-        clearTimeout(tID); 
-        mG.gain.setTargetAtTime(0,ctx.currentTime,0.05); 
+        clearTimeout(tID); mG.gain.setTargetAtTime(0,ctx.currentTime,0.05); 
         setTimeout(()=>{
             mG.gain.value=$('mVol').value;
-            banks.forEach(bn=>bn.forEach(t=>{
-                t.activeSources.forEach(s=>{try{s.stop()}catch(e){}});
-                t.activeSources=[];
-            }));
-        },100); 
-        up(); 
-    }
-};
+            tracks.forEach(t=>{ 
+                t.activeSources.forEach(s=>{try{s.source.stop()}catch(e){}}); 
+                t.activeSources=[]; 
+            });
+        },100); up(); 
+    }};
 
 window.removeFX = (idx) => {
-    const fx = window_fxR[idx];
-    if (!fx) return;
-    banks.forEach(bn => bn.forEach(t => { if(t.route === fx.id) t.route = "MASTER"; }));
+    markDirty(); const fx = window_fxR[idx]; if (!fx) return;
+    tracks.forEach(t => { if(t.route === fx.id) t.route = "MASTER"; });
     try { if(fx.input) fx.input.disconnect(); if(fx.output) fx.output.disconnect(); } catch(e){}
-    window_fxR.splice(idx, 1);
-    renderFX(); updateTD();
+    window_fxR.splice(idx, 1); renderFX(); updateTD();
 };
 
 const renderFX = () => {
@@ -424,35 +486,73 @@ const renderFX = () => {
 const exportSession=async()=>{
     const zip=new JSZip();
     const proj={
-        bpm:$('bpm').value,
-        S,
-        mVol:$('mVol').value,
-        mode: m, 
+        version: 34,
+        bpm:$('bpm').value, S, mVol:$('mVol').value, mode: m, 
         swing: { val: $('swAmt').value, code: swingCodeStore },
         fx:window_fxR.map(f=>({id:f.id,name:f.name,code:f._originalCode,state:f.getState?f.getState():{}})),
-        banks:banks.map(bn=>bn.map(t=>({s:t.s,oct:t.oct,route:t.route,fileName:t.fileName,vol:t.vV.gain.value})))
-    };
-    zip.file("project.json",JSON.stringify(proj));
-    banks[0].forEach(t=>{if(t.rawBlob)zip.file(`samples/${t.fileName}`,t.rawBlob);});
+        tracks: tracks.map(t=>({
+            oct:t.oct, route:t.route, fileName:t.fileName, vol:t.vV.gain.value, filter: t.filter, env: t.env
+        })),
+        patterns: patterns
+    };    
+    const securedData = encodeSys(proj);
+    if(!securedData) { log("EXPORT_ERROR: ENCRYPTION_FAILED"); return; }
+    zip.file("sys_core.bin", securedData); 
+    tracks.forEach(t=>{if(t.rawBlob)zip.file(`samples/${t.fileName}`,t.rawBlob);});
     const b=await zip.generateAsync({type:"blob"});
     const l=document.createElement('a'); l.href=URL.createObjectURL(b); l.download=`SESSION.omikuji`; l.click();
+    isDirty = false; log("> SESSION_SECURED_AND_SAVED");
 };
 
 async function importSession(e) {
-    await initA();
-    let f=e.target.files[0]; if(!f) return;
-    log("IMPORTING SESSION...");
+    await initA(); let f=e.target.files[0]; if(!f) return;
+    log("AUTHENTICATING SESSION DATA...");
     try {
-        const zip = await JSZip.loadAsync(f);
-        const proj = JSON.parse(await zip.file("project.json").async("string"));
-        banks = Array.from({length:8},()=>[]);
+        const zip = await JSZip.loadAsync(f); let proj;
+        if (zip.file("sys_core.bin")) { let encrypted = await zip.file("sys_core.bin").async("string"); proj = decodeSys(encrypted); } 
+        else if (zip.file("project.json")) { log("WARNING: LEGACY_FORMAT_DETECTED"); proj = JSON.parse(await zip.file("project.json").async("string")); } 
+        else { throw new Error("INVALID_FILE_STRUCTURE"); }
+        
+        tracks = [];
+        patterns = Array.from({length:8},()=>[]);
         window_fxR = [];
         
-        if(proj.mode !== undefined) {
-            m = proj.mode;
-            $('mB').innerText = m ? 'MODE:SONG' : 'MODE:PAT';
+        if(!proj.version || proj.version < 34) {
+            log("> MIGRATING LEGACY PROJECT TO V34...");
+            let legacyBanks = proj.banks || []; 
+            let refPattern = legacyBanks[0] || [];
+            for(let i=0; i<refPattern.length; i++) {
+                let pT = refPattern[i];
+                let track = createTrackObj();
+                track.oct = pT.oct; track.route = pT.route; track.fileName = pT.fileName; track.vV.gain.value = pT.vol;
+                track.filter = pT.filter || {cut: 20000, res: 0}; track.env = pT.env || {a: 0.005, d: 0.1, s: 1, r: 0.1};
+                let sFile = zip.file(`samples/${pT.fileName}`);
+                if(sFile){ track.rawBlob = await sFile.async("blob"); track.buf = await ctx.decodeAudioData(await track.rawBlob.arrayBuffer()); }
+                tracks.push(track);
+            }
+            for(let pi=0; pi<8; pi++) {
+                if(legacyBanks[pi]) {
+                    legacyBanks[pi].forEach((t, ti) => {
+                        if(!patterns[pi][ti]) patterns[pi][ti] = []; 
+                        patterns[pi][ti] = t.s; 
+                    });
+                }
+            }
+        } 
+        else {
+            for(let i=0; i<proj.tracks.length; i++) {
+                let tData = proj.tracks[i];
+                let track = createTrackObj();
+                track.oct = tData.oct; track.route = tData.route; track.fileName = tData.fileName; track.vV.gain.value = tData.vol;
+                track.filter = tData.filter; track.env = tData.env;
+                let sFile = zip.file(`samples/${tData.fileName}`);
+                if(sFile){ track.rawBlob = await sFile.async("blob"); track.buf = await ctx.decodeAudioData(await track.rawBlob.arrayBuffer()); }
+                tracks.push(track);
+            }
+            patterns = proj.patterns;
         }
 
+        if(proj.mode !== undefined) { m = proj.mode; $('mB').innerText = m ? 'MODE:SONG' : 'MODE:PAT'; }
         if(proj.swing) {
             $('swAmt').value = proj.swing.val;
             if(proj.swing.code) {
@@ -461,59 +561,43 @@ async function importSession(e) {
                 const url = URL.createObjectURL(blob);
                 const mod = await import(url + '#' + Date.now());
                 swingEngine = mod.default || mod;
-                log(`SWING RESTORED`);
             }
         }
-
-        for(let fx of proj.fx){
-            let ins = await _inject(fx.code, fx.name, fx.id);
-            if(ins.setState) ins.setState(fx.state);
-        }
-        for(let bi=0; bi<8; bi++){
-            for(let ti=0; ti<proj.banks[bi].length; ti++){
-                let pT = proj.banks[bi][ti];
-                let track = {s:pT.s, oct:pT.oct, buf:null, rawBlob:null, fileName:pT.fileName, vV:ctx.createGain(), route:pT.route, activeSources:[]};
-                track.vV.gain.value = pT.vol;
-                let sFile = zip.file(`samples/${pT.fileName}`);
-                if(sFile){
-                    track.rawBlob = await sFile.async("blob");
-                    track.buf = await ctx.decodeAudioData(await track.rawBlob.arrayBuffer());
-                }
-                banks[bi].push(track);
-            }
-        }
+        for(let fx of proj.fx){ let ins = await _inject(fx.code, fx.name, fx.id); if(ins.setState) ins.setState(fx.state); }
+        
         S=proj.S; $('bpm').value=proj.bpm; $('mVol').value=proj.mVol;
-        renderRack(); renderFX(); updateTD(); up();
-        log("SESSION LOADED.");
-    } catch(err) { log(`IMPORT ERROR: ${err.message}`); }
+        renderRack(); renderFX(); updateTD(); up(); isDirty = false; log("SESSION LOADED.");
+    } catch(err) { log(`IMPORT ERROR: ${err.message}`); console.error(err); }
 }
 
+const createTrackObj = () => {
+    return {
+        buf:null, rawBlob:null, fileName:"NO_SAMPLE", vV:ctx.createGain(), route:"MASTER", activeSources:[],
+        filter: { cut: 20000, res: 0 }, env: { a: 0.005, d: 0.1, s: 1, r: 0.1 }, oct: 2
+    };
+};
+
 const drS=()=>{
-    let controls = `<div class="arr-ctrl"><button class="arr-btn" onclick="S.push(0);up()">+</button><button class="arr-btn" onclick="S.pop();up()" style="color:#2979ff">-</button></div>`;
-    let blocks = S.map((p,i)=>`<div class="song-block" style="background:${(m&&run&&si-1==i)?'var(--ice-bright)':'#151a21'};color:${(m&&run&&si-1==i)?'#000':'var(--ice-bright)'};border-color:${(m&&run&&si-1==i)?'var(--ice-bright)':'#2a3540'}; box-shadow:${(m&&run&&si-1==i)?'var(--ice-glow)':'none'}" onclick="S[${i}]=(S[${i}]+1)%8;up()">P${p+1}</div>`).join('');
+    let controls = `<div class="arr-ctrl"><button class="arr-btn" onclick="markDirty(); S.push(0);up()">+</button><button class="arr-btn" onclick="markDirty(); S.pop();up()" style="color:#2979ff">-</button></div>`;
+    let blocks = S.map((p,i)=>`<div class="song-block" style="background:${(m&&run&&si-1==i)?'var(--ice-bright)':'#151a21'};color:${(m&&run&&si-1==i)?'#000':'var(--ice-bright)'};border-color:${(m&&run&&si-1==i)?'var(--ice-bright)':'#2a3540'}; box-shadow:${(m&&run&&si-1==i)?'var(--ice-glow)':'none'}" onclick="markDirty(); S[${i}]=(S[${i}]+1)%8;up()">P${p+1}</div>`).join('');
     $('song-slots').innerHTML = controls + blocks;
 };
 
 const up=()=>{
     $('pattern-nav').innerHTML=[0,1,2,3,4,5,6,7].map(i=>`<button onclick="b=${i};up()" style="flex:1;background:${b==i?'var(--ice-bright)':'#0f141a'};color:${b==i?'#000':'var(--ice-bright)'}; padding:2px; font-size:10px; box-shadow:${b==i?'var(--ice-glow)':'none'}">${i+1}</button>`).join('');
-    if(banks[b]){
-        banks[b].forEach((t,ti)=>{
+    for(let j=0; j<16; j++) { let l = $(`led-${j}`); if(l) { if(cur === j && run) l.classList.add('led-active'); else l.classList.remove('led-active'); } }
+    
+    if(patterns[b]){
+        tracks.forEach((t,ti)=>{
             for(let i=0;i<16;i++){
-                let st=t.s[i];
+                if(!patterns[b][ti]) patterns[b][ti] = Array.from({length:16},()=>({on:0,v:0.8,freq:65.41}));
+                let st=patterns[b][ti][i];
                 let el=$(`s-${ti}-${i}`);
                 if(el){
-                    el.style.background=st.on?(cur==i?"var(--ice-bright)":"#000"):(cur==i?"#37474f":(i%4==0?"#1c2530":"#151a21"));
-                    if(st.on && cur==i) {
-                        el.style.borderColor = "var(--ice-bright)";
-                        el.style.boxShadow = "var(--ice-glow)";
-                    } else if(st.on) {
-                        el.style.borderColor = "#fff";
-                    } else {
-                        el.style.borderColor = "#2a3540";
-                        el.style.boxShadow = "none";
-                    }
-                    $(`v-bar-${ti}-${i}`).style.height=(st.v*100)+"%"; 
-                    $(`v-bar-${ti}-${i}`).style.opacity=st.on?1:0.2;
+                    el.style.background = st.on ? "#000" : (i % 4 == 0 ? "#1c2530" : "#151a21");
+                    el.style.borderColor = st.on ? "#fff" : "#2a3540";
+                    el.style.boxShadow = st.on ? "var(--ice-glow)" : "none";
+                    $(`v-bar-${ti}-${i}`).style.height=(st.v*100)+"%"; $(`v-bar-${ti}-${i}`).style.opacity=st.on?1:0.2;
                 }
             }
         });
@@ -522,10 +606,11 @@ const up=()=>{
 };
 
 const renderPiano=(ti)=>{
-    let g=$(`pg-${ti}`); g.innerHTML=''; let oct=banks[0][ti].oct;
+    let g=$(`pg-${ti}`); g.innerHTML=''; let oct=tracks[ti].oct;
     for(let j=0;j<16;j++){
         let col=document.createElement('div'); col.className="step-col";
-        let currentNote = banks[b][ti].s[j];
+        if(!patterns[b][ti]) patterns[b][ti] = Array.from({length:16},()=>({on:0,v:0.8,freq:65.41}));
+        let currentNote = patterns[b][ti][j];
         NOTES.forEach(n=>{
             let m=([24,23,22,21,20,19,18,17,16,15,14,13,12][NOTES.indexOf(n)])+(oct*12);
             let f=440*Math.pow(2,(m-69)/12);
@@ -533,12 +618,7 @@ const renderPiano=(ti)=>{
             let k=document.createElement('div'); k.className=`piano-key pk-${ti}-${j}`; 
             if(currentNote.on && Math.abs(currentNote.freq - fFix) < 0.1) k.classList.add('key-active');
             k.innerText=n+(oct+1);
-            k.onclick=(e)=>{
-                e.stopPropagation();
-                if(currentNote.on && Math.abs(currentNote.freq - fFix) < 0.1) banks[b][ti].s[j].on = 0; 
-                else { banks[b][ti].s[j].freq=fFix; banks[b][ti].s[j].on=1; }
-                up(); renderPiano(ti); 
-            }; 
+            k.onclick=(e)=>{ markDirty(); e.stopPropagation(); if(currentNote.on && Math.abs(currentNote.freq - fFix) < 0.1) patterns[b][ti][j].on = 0; else { patterns[b][ti][j].freq=fFix; patterns[b][ti][j].on=1; } up(); renderPiano(ti); }; 
             col.appendChild(k);
         });
         g.appendChild(col);
@@ -547,13 +627,14 @@ const renderPiano=(ti)=>{
 
 const renderRack=()=>{
     let r=$('rack'); r.innerHTML='';
-    banks[0].forEach((t,i)=>{
+    tracks.forEach((t,i)=>{
         let d=document.createElement('div'); d.className="track-row";
         d.innerHTML=`
         <div class="track-controls">
             <div class="ctrl-row">
                 <span class="data-font" style="font-weight:bold">T${i+1}</span>
                 <div>
+                    <button class="tiny-btn" onclick="openSampler(${i})">W</button>
                     <button class="tiny-btn" onclick="toggleP(${i})">P</button>
                     <button class="tiny-btn del-btn" onclick="remT(${i}, event)">X</button>
                 </div>
@@ -562,60 +643,164 @@ const renderRack=()=>{
             <div class="ctrl-row" style="gap:2px">
                 <button onclick="this.nextElementSibling.click()" class="tiny-btn" style="flex:1">L</button>
                 <input type="file" style="display:none" onchange="ld(${i},event)">
-                <select class="route-select" style="width:60px; height:15px; font-size:9px" onchange="banks.forEach(bn=>bn[${i}].route=this.value)"></select>
+                <select class="route-select" style="width:60px; height:15px; font-size:9px" onchange="markDirty(); tracks[${i}].route=this.value"></select>
             </div>
-            <input type="range" min="0" max="1" step="0.01" value="${t.vV.gain.value}" oninput="banks.forEach(bn=>bn[${i}].vV.gain.value=this.value)" style="height:10px; margin-top:2px">
+            <input type="range" min="0" max="1" step="0.01" value="${t.vV.gain.value}" oninput="markDirty(); tracks[${i}].vV.gain.value=this.value" style="height:10px; margin-top:2px">
         </div>
         <div style="flex:1">
             <div class="step-grid" id="steps-${i}"></div>
             <div class="step-grid" style="margin-top:2px" id="vels-${i}"></div>
             <div id="piano-${i}" class="piano-drawer">
-                <div class="data-font">OCTAVE: <input type="range" min="0" max="6" step="1" value="${t.oct}" oninput="banks.forEach(bn=>bn[${i}].oct=parseInt(this.value));renderPiano(${i});up()"></div>
+                <div class="data-font">OCTAVE: <input type="range" min="0" max="6" step="1" value="${t.oct}" oninput="markDirty(); tracks[${i}].oct=parseInt(this.value);renderPiano(${i});up()"></div>
                 <div class="step-grid" id="pg-${i}" style="margin-top:8px"></div>
             </div>
         </div>`;
         r.appendChild(d);
         for(let j=0;j<16;j++){
-            let c1=document.createElement('div'); c1.className="step-col"; let s=document.createElement('div'); s.id=`s-${i}-${j}`; s.className="step"; s.onclick=()=>{banks[b][i].s[j].on=1-banks[b][i].s[j].on; up(); renderPiano(i);}; c1.appendChild(s); $(`steps-${i}`).appendChild(c1);
-            let c2=document.createElement('div'); c2.className="step-col"; let v=document.createElement('div'); v.className="v-box"; v.innerHTML=`<div id="v-bar-${i}-${j}" class="v-bar"></div>`; v.onmousedown=e=>{let rect=v.getBoundingClientRect(); banks[b][i].s[j].v=Math.max(0,Math.min(1,1-((e.clientY-rect.top)/rect.height))); up();}; c2.appendChild(v); $(`vels-${i}`).appendChild(c2);
+            let c1=document.createElement('div'); c1.className="step-col"; let s=document.createElement('div'); s.id=`s-${i}-${j}`; s.className="step"; s.onclick=()=>{markDirty(); patterns[b][i][j].on=1-patterns[b][i][j].on; up(); renderPiano(i);}; c1.appendChild(s); $(`steps-${i}`).appendChild(c1);
+            let c2=document.createElement('div'); c2.className="step-col"; let v=document.createElement('div'); v.className="v-box"; v.innerHTML=`<div id="v-bar-${i}-${j}" class="v-bar"></div>`; v.onmousedown=e=>{markDirty(); let rect=v.getBoundingClientRect(); patterns[b][i][j].v=Math.max(0,Math.min(1,1-((e.clientY-rect.top)/rect.height))); up();}; c2.appendChild(v); $(`vels-${i}`).appendChild(c2);
         }
         renderPiano(i);
     });
+    let gutter = $('playhead-gutter'); gutter.innerHTML = '';
+    for(let j=0; j<16; j++) { let led = document.createElement('div'); led.id = `led-${j}`; led.className = 'led'; gutter.appendChild(led); }
     updateTD(); up();
 };
 
-const addT=()=>{ initA(); banks.forEach(bn=>bn.push({s:Array.from({length:16},()=>({on:0,v:0.8,freq:65.41})),oct:2,buf:null,rawBlob:null,fileName:"NO_SAMPLE",vV:ctx.createGain(),route:"MASTER",activeSources:[]})); renderRack(); };
-const remT=(idx, e)=>{ 
-    if(e) e.stopPropagation();
-    let i = parseInt(idx);
-    banks.forEach(bn=>{ 
-        if(bn[i] && bn[i].activeSources) bn[i].activeSources.forEach(s=>{try{s.stop()}catch(e){}}); 
-        bn.splice(i,1); 
-    }); 
+const addT=()=>{ 
+    markDirty(); initA(); 
+    tracks.push(createTrackObj());
+    patterns.forEach(pat => { pat.push(Array.from({length:16},()=>({on:0,v:0.8,freq:65.41}))); });
     renderRack(); 
 };
 
+const remT=(idx, e)=>{ 
+    markDirty(); if(e) e.stopPropagation(); let i = parseInt(idx); 
+    if(tracks[i].activeSources) tracks[i].activeSources.forEach(s=>{try{s.source.stop()}catch(e){}});
+    tracks.splice(i,1);
+    patterns.forEach(pat => { if(pat[i]) pat.splice(i,1); });
+    renderRack(); 
+};
+
+const openSampler = (idx) => {
+    activeTrackEdit = idx;
+    $('sampler-overlay').style.display = 'flex';
+    let t = tracks[idx];
+    $('smp-info').innerText = t.fileName;
+    $('sl-cut').value = t.filter.cut / 20000; $('val-cut').innerText = t.filter.cut > 1000 ? (t.filter.cut/1000).toFixed(1)+'k' : Math.floor(t.filter.cut);
+    $('sl-res').value = t.filter.res; $('val-res').innerText = t.filter.res;
+    $('sl-att').value = Math.sqrt(t.env.a / 2); $('val-att').innerText = t.env.a.toFixed(3);
+    $('sl-dec').value = Math.sqrt(t.env.d / 2); $('val-dec').innerText = t.env.d.toFixed(3);
+    $('sl-sus').value = t.env.s; $('val-sus').innerText = t.env.s.toFixed(2);
+    $('sl-rel').value = Math.sqrt(t.env.r / 5); $('val-rel').innerText = t.env.r.toFixed(3);
+    cacheWave(t.buf);
+    samplerAnimID = requestAnimationFrame(samplerAnimate);
+};
+
+const closeSampler = () => {
+    $('sampler-overlay').style.display = 'none';
+    activeTrackEdit = -1;
+    cancelAnimationFrame(samplerAnimID);
+};
+
+const previewNote = () => {
+    if(activeTrackEdit < 0) return;
+    initA();
+    let t = tracks[activeTrackEdit];
+    let result = triggerTrackSound(t, 65.41, ctx.currentTime, 1.0);
+    // ONLY schedule release if a sample voice was actually triggered (result != null)
+    if(result && result.env) {
+        let sampleDur = t.buf ? t.buf.duration : 0.5;
+        let releaseStart = ctx.currentTime + sampleDur;
+        result.env.gain.cancelScheduledValues(releaseStart);
+        result.env.gain.setValueAtTime(result.env.gain.value, releaseStart);
+        result.env.gain.exponentialRampToValueAtTime(0.001, releaseStart + t.env.r);
+    }
+    samplerPlayStart = ctx.currentTime;
+    samplerPlayDur = t.buf ? t.buf.duration : 0;
+};
+
+const updSmpParams = () => {
+    if(activeTrackEdit < 0) return;
+    markDirty();
+    let t = tracks[activeTrackEdit];
+    t.filter.cut = parseFloat($('sl-cut').value) * 20000;
+    t.filter.res = parseFloat($('sl-res').value);
+    t.activeSources.forEach(voice => {
+        if(voice.f1) { voice.f1.frequency.setValueAtTime(t.filter.cut, ctx.currentTime); voice.f1.Q.setValueAtTime(t.filter.res, ctx.currentTime); }
+        if(voice.f2) { voice.f2.frequency.setValueAtTime(t.filter.cut, ctx.currentTime); voice.f2.Q.setValueAtTime(t.filter.res, ctx.currentTime); }
+    });
+    t.env.a = Math.pow(parseFloat($('sl-att').value), 2) * 2;
+    t.env.d = Math.pow(parseFloat($('sl-dec').value), 2) * 2;
+    t.env.s = parseFloat($('sl-sus').value);
+    t.env.r = Math.pow(parseFloat($('sl-rel').value), 2) * 5;
+    $('val-cut').innerText = t.filter.cut > 1000 ? (t.filter.cut/1000).toFixed(1)+'k' : Math.floor(t.filter.cut);
+    $('val-res').innerText = t.filter.res;
+    $('val-att').innerText = t.env.a.toFixed(3); 
+    $('val-dec').innerText = t.env.d.toFixed(3);
+    $('val-sus').innerText = t.env.s.toFixed(2); 
+    $('val-rel').innerText = t.env.r.toFixed(3);
+};
+
+const cacheWave = (buffer) => {
+    cacheCtx.clearRect(0,0,560,150);
+    cacheCtx.fillStyle = "#000"; cacheCtx.fillRect(0,0,560,150);
+    if(!buffer) {
+        cacheCtx.fillStyle = "#1c2530"; cacheCtx.font = "12px DATA"; cacheCtx.fillText("NO AUDIO DATA", 240, 80);
+        return;
+    }
+    const data = buffer.getChannelData(0);
+    const step = Math.ceil(data.length / 560);
+    const amp = 75;
+    cacheCtx.beginPath();
+    cacheCtx.strokeStyle = "#00e5ff"; cacheCtx.lineWidth = 1;
+    for(let i=0; i < 560; i++) {
+        let min = 1.0; let max = -1.0;
+        for (let j=0; j<step; j++) {
+            const datum = data[(i*step)+j]; 
+            if (datum < min) min = datum; if (datum > max) max = datum;
+        }
+        cacheCtx.moveTo(i, (1+min)*amp); cacheCtx.lineTo(i, (1+max)*amp);
+    }
+    cacheCtx.stroke();
+};
+
+const samplerAnimate = () => {
+    samplerCtx.drawImage(cacheCanvas, 0, 0);
+    if (ctx && samplerPlayDur > 0) {
+        let elapsed = ctx.currentTime - samplerPlayStart;
+        if(elapsed >= 0 && elapsed < samplerPlayDur) {
+            let x = (elapsed / samplerPlayDur) * 560;
+            samplerCtx.strokeStyle = "rgba(0, 229, 255, 0.8)";
+            samplerCtx.lineWidth = 2;
+            samplerCtx.beginPath();
+            samplerCtx.moveTo(x, 0);
+            samplerCtx.lineTo(x, 150);
+            samplerCtx.stroke();
+        }
+    }
+    samplerAnimID = requestAnimationFrame(samplerAnimate);
+};
+
 const tab=t=>{ $('page-seq').style.display=t=='seq'?'flex':'none'; $('page-fx').style.display=t=='fx'?'flex':'none'; $('tSeq').style.background=t=='seq'?'var(--ice-bright)':'#0f141a'; $('tSeq').style.color=t=='seq'?'#000':'var(--ice-bright)'; $('tSeq').style.boxShadow=t=='seq'?'var(--ice-glow)':'none'; $('tFx').style.background=t=='fx'?'var(--ice-bright)':'#0f141a'; $('tFx').style.color=t=='fx'?'#000':'var(--ice-bright)'; $('tFx').style.boxShadow=t=='fx'?'var(--ice-glow)':'none'; };
-const updateTD=()=>{ document.querySelectorAll('.route-select').forEach((sel,i)=>{ let v=banks[0][i].route; sel.innerHTML='<option value="MASTER">MASTER</option>'; window_fxR.forEach(f=>sel.innerHTML+=`<option value="${f.id}">${f.id}</option>`); sel.value=v; }); };
+const updateTD=()=>{ document.querySelectorAll('.route-select').forEach((sel,i)=>{ let v=tracks[i].route; sel.innerHTML='<option value="MASTER">MASTER</option>'; window_fxR.forEach(f=>sel.innerHTML+=`<option value="${f.id}">${f.id}</option>`); sel.value=v; }); };
 async function _inject(code, name, id=null) { 
     const blob = new Blob([code], { type: 'text/javascript' });
     const mod = await import(URL.createObjectURL(blob) + '#' + Date.now());
     const Cls = mod.default || Object.values(mod)[0];
     const ins = new Cls(ctx);
     ins.id = id || "FX_" + Math.random().toString(36).substr(2, 4).toUpperCase();
-    ins.name = name;
-    ins._originalCode = code;
+    ins.name = name; ins._originalCode = code;
     if (ins.output) ins.output.connect(mG);
-    window_fxR.push(ins);
-    renderFX(); return ins; 
+    window_fxR.push(ins); renderFX(); return ins; 
 }
-async function injectPlugin(e) { let f=e.target.files[0]; if(!f)return; let c=await f.text(); await _inject(c, f.name); updateTD(); }
-const ld=async(i,e)=>{ let f=e.target.files[0]; if(!f)return; let d=await ctx.decodeAudioData(await f.arrayBuffer()); banks.forEach(bn=>{bn[i].buf=d; bn[i].fileName=f.name.toUpperCase(); bn[i].rawBlob=f;}); renderRack(); };
+async function injectPlugin(e) { markDirty(); let f=e.target.files[0]; if(!f)return; let c=await f.text(); await _inject(c, f.name); updateTD(); }
+const ld=async(i,e)=>{ markDirty(); let f=e.target.files[0]; if(!f)return; let d=await ctx.decodeAudioData(await f.arrayBuffer()); tracks[i].buf=d; tracks[i].fileName=f.name.toUpperCase(); tracks[i].rawBlob=f; renderRack(); if(activeTrackEdit==i)openSampler(i); };
 const armRec=()=>{ initA(); armed=1; chunks=[]; $('armB').innerText="ARMED"; $('armB').style.background="var(--ice-bright)"; $('armB').style.color="#000"; $('armB').style.boxShadow="var(--ice-glow)"; };
 const exportWav=()=>{let a=document.createElement('a'); a.href=$('prev').src; a.download=`REC.wav`; a.click()};
 const toggleP=i=>{ let d=$(`piano-${i}`); d.style.display=d.style.display=='block'?'none':'block'; };
-const copyP=()=>{ clip = JSON.parse(JSON.stringify(banks[b].map(t=>t.s))); log(`COPIED PATTERN ${b+1}`); };
-const pasteP=()=>{ if(!clip)return; banks[b].forEach((t,i)=>{ t.s = JSON.parse(JSON.stringify(clip[i])); }); up(); log(`PASTED TO PATTERN ${b+1}`); };
+const copyP=()=>{ clip = JSON.parse(JSON.stringify(patterns[b])); log(`COPIED PATTERN ${b+1}`); };
+const pasteP=()=>{ if(!clip)return; markDirty(); patterns[b] = JSON.parse(JSON.stringify(clip)); up(); log(`PASTED TO PATTERN ${b+1}`); };
 
 addT();
 </script>
