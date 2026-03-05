@@ -1,5 +1,7 @@
 
-<!DOCTYPE html><html><head>
+<!DOCTYPE html>
+<html>
+<head>
     <meta charset="UTF-8">
     <title>OMIKUJI // MASTER_CORE_v34.2_INSTRUMENT_FIX</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -135,7 +137,15 @@
         .del-btn { color: #f44; border-color: #522; font-weight: bold; padding: 2px 6px; }
         .del-btn:hover { background: #f44 !important; color: #fff !important; border-color: #f44 !important; box-shadow: 0 0 10px #f44; }
 
-        .track-row { display:flex; gap:8px; align-items:flex-start; padding:4px; border-bottom:1px solid #1c2530; background:#11161d; }
+        .track-row { display:flex; gap:8px; align-items:flex-start; padding:4px; border-bottom:1px solid #1c2530; background:#11161d; transition: background 0.1s, border-color 0.1s; }
+        
+        /* --- DRAG AND DROP FEEDBACK --- */
+        .track-row.drag-over {
+            background: #00e5ff1a !important; /* Slight cyan tint */
+            border-color: var(--ice-bright) !important;
+            box-shadow: inset 0 0 15px rgba(0, 229, 255, 0.2);
+        }
+
         .track-controls { width:120px; flex-shrink:0; display:flex; flex-direction:column; gap:3px; }
         .ctrl-row { display:flex; justify-content:space-between; align-items:center; }
         .tiny-btn { padding: 2px 6px; font-size: 9px; }
@@ -464,7 +474,8 @@ const play=async()=>{
                 t.activeSources=[]; 
             });
         },100); up(); 
-    }};
+    }
+};
 
 window.removeFX = (idx) => {
     markDirty(); const fx = window_fxR[idx]; if (!fx) return;
@@ -494,7 +505,8 @@ const exportSession=async()=>{
             oct:t.oct, route:t.route, fileName:t.fileName, vol:t.vV.gain.value, filter: t.filter, env: t.env
         })),
         patterns: patterns
-    };    
+    };
+    
     const securedData = encodeSys(proj);
     if(!securedData) { log("EXPORT_ERROR: ENCRYPTION_FAILED"); return; }
     zip.file("sys_core.bin", securedData); 
@@ -628,7 +640,42 @@ const renderPiano=(ti)=>{
 const renderRack=()=>{
     let r=$('rack'); r.innerHTML='';
     tracks.forEach((t,i)=>{
-        let d=document.createElement('div'); d.className="track-row";
+        let d=document.createElement('div'); 
+        d.className="track-row";
+
+        // --- NEW DRAG AND DROP LOGIC ---
+        d.ondragover = (e) => { 
+            e.preventDefault(); 
+            d.classList.add('drag-over'); 
+        };
+        d.ondragleave = (e) => { 
+            e.preventDefault(); 
+            d.classList.remove('drag-over'); 
+        };
+        d.ondrop = async (e) => {
+            e.preventDefault();
+            d.classList.remove('drag-over');
+            
+            let f = e.dataTransfer.files[0];
+            if(!f) return;
+            
+            markDirty();
+            await initA(); // Ensure Audio Context is awake
+            
+            try {
+                let decoded = await ctx.decodeAudioData(await f.arrayBuffer());
+                tracks[i].buf = decoded;
+                tracks[i].fileName = f.name.toUpperCase();
+                tracks[i].rawBlob = f;
+                renderRack();
+                if(activeTrackEdit == i) openSampler(i);
+                log(`> DRAG_LOAD: ${tracks[i].fileName}`);
+            } catch (err) {
+                log(`> LOAD_ERROR: INVALID_AUDIO_DATA`);
+            }
+        };
+        // --- END DRAG AND DROP LOGIC ---
+
         d.innerHTML=`
         <div class="track-controls">
             <div class="ctrl-row">
