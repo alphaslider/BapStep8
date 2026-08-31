@@ -447,6 +447,7 @@ let samplerPlayStart = 0, samplerPlayDur = 0, samplerAnimID;
 
 let tracks = [];
 let patterns = Array.from({length:8},()=>[]); 
+    let window_fxR = []; // <-- ADDED THIS LINE TO MONKEY PATCH SYSTEM
 let isDirty = false;
 const markDirty = () => { isDirty = true; };
 const SYS_KEY = "OMIKUJI_CORE_V33_SECRET_KEY"; 
